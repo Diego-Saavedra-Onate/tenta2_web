@@ -10,7 +10,6 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-<<<<<<< HEAD
     "@nuxt/ui": "^4.11.3",
     "@prisma/adapter-mariadb": "^7.10.1",
     "@prisma/client": "^7.10.0",
@@ -31,12 +30,5 @@
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
-=======
-    "@nuxt/ui": "^4.11.2",
-    "nuxt": "^4.5.2",
-    "tailwindcss": "^4.3.3",
-    "vue": "^3.5.43",
-    "vue-router": "^5.3.1"
->>>>>>> 334d965de2f9482a8333712cac75ceaaaca1f0c3
   }
 }
