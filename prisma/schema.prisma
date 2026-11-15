@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// ==========================================
+// ENUMS (Codificación de valores especiales)
+// ==========================================
+
+enum Rol {
+  admin
+  cliente
+}
+
+enum EstadoPedido {
+  PEN // Pendiente de evaluación técnica por la administradora
+  ACE // Aceptado, en espera de pago
+  PRE // Aprobado y en preparación en cocina
+  LIS // Terminado, listo para retiro en Algarrobo
+  ENT // Entregado / retirado por el cliente, pedido cerrado
+  RCH // Rechazado por la administradora
+}
+
+enum EstadoPago {
+  PEN // Comprobante cargado, pendiente de verificación
+  CON // Pago confirmado/validado por la administradora
+  RCH // Comprobante rechazado (monto no coincide / ilegible)
+}
+
+model Usuario {
+  id       Int     @id @default(autoincrement()) @db.SmallInt
+  email    String  @unique @db.VarChar(250)
+  password String  @db.VarChar(250)
+  nombre   String  @db.VarChar(100)
+  apellido String  @db.VarChar(100)
+  rol      String  @db.VarChar(50)
+  telefono String  @db.VarChar(15)
+  vetado   Boolean @default(false)
+  pedidos  Pedidos[]
+}
+
+model Categorias{
+  id Int @id @default(autoincrement()) @db.SmallInt
+  nombre String @db.VarChar(50)
+  descripcion String @db.VarChar(200)
+  producto Productos[]
+}
+
+model Productos {
+  id               Int             @id @default(autoincrement()) @db.SmallInt
+  nombre           String          @db.VarChar(100)
+  descripcion      String          @db.VarChar(200)
+  precio           Decimal         @db.Decimal(10, 0)
+  disponibilidad   Int             @db.UnsignedTinyInt
+  producto_visible Boolean         @default(true)
+  imagen           String          @db.VarChar(255)
+  categoria_id     Int             @db.SmallInt
+  categoria        Categorias      @relation(fields: [categoria_id], references: [id])
+  
+  // Campo de relación opuesta añadido
+  detalles         DetallePedido[]
+
+  @@index([categoria_id])
+}
+
+model Pedidos {
+  id                    Int             @id @default(autoincrement()) @db.MediumInt
+  usuario_id            Int             @db.SmallInt
+  estado                EstadoPedido    @default(PEN)
+  fecha_retiro          DateTime        @db.Date
+  nombre_cliente        String          @db.VarChar(100)
+  rut_cliente           String          @db.VarChar(12)
+  monto_total           Decimal         @db.Decimal(10, 0)
+  fecha_pedido          DateTime        @default(now()) @db.Timestamp(0)
+  fecha_retiro_efectiva DateTime?       @db.Timestamp(0)
+  usuario               Usuario         @relation(fields: [usuario_id], references: [id])
+  detalles              DetallePedido[]
+  pagos                 Pagos[]
+
+  @@map("pedidos")
+}
+
+model DetallePedido {
+  id              Int       @id @default(autoincrement()) @db.MediumInt
+  pedido_id       Int       @db.MediumInt
+  producto_id     Int       @db.SmallInt
+  cantidad        Int       @db.UnsignedTinyInt
+  precio_unitario Decimal   @db.Decimal(10, 0)
+  personalizacion String?   @db.Text
+  pedido          Pedidos   @relation(fields: [pedido_id], references: [id], onDelete: Cascade)
+  producto        Productos @relation(fields: [producto_id], references: [id])
+
+  @@map("detalle_pedido")
+}
+
+model Pagos {
+  id                Int        @id @default(autoincrement()) @db.MediumInt
+  pedido_id         Int        @db.MediumInt
+  comprobante       String     @db.VarChar(255)
+  monto             Decimal    @db.Decimal(10, 0)
+  estado            EstadoPago @default(PEN)
+  fecha_comprobante DateTime   @default(now()) @db.Timestamp(0)
+  pedido            Pedidos    @relation(fields: [pedido_id], references: [id], onDelete: Cascade)
+
+  @@map("pagos")
+}
