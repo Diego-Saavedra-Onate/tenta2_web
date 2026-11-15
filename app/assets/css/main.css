@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
 @import "@nuxt/ui";
@@ -61,3 +62,7 @@
     radial-gradient(circle at 80% 20%, rgb(184 115 51 / 0.07), transparent 50%),
     linear-gradient(180deg, #f7efe4 0%, var(--color-brand-bg) 100%);
 }
+=======
+@import "tailwindcss";
+@import "@nuxt/ui";
+>>>>>>> 334d965de2f9482a8333712cac75ceaaaca1f0c3

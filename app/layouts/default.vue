@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <script setup lang="ts">
 const route = useRoute()
 
@@ -44,10 +45,19 @@ const sesion = [
             </UContainer>
         </nav>
 
+=======
+<template>
+    <div class="min-h-screen flex flex-col justify-between">
+        <!-- Navbar arriba -->
+        <AppNavbar />
+
+        <!-- Aquí se cargan dinámicamente tus páginas (index.vue, etc.) -->
+>>>>>>> 334d965de2f9482a8333712cac75ceaaaca1f0c3
         <main class="flex-1">
             <slot />
         </main>
 
+<<<<<<< HEAD
         <footer class="bg-muted border-t border-default py-8 mt-auto">
             <div class="max-w-7xl mx-auto flex flex-col items-center justify-center gap-2 text-center px-4">
                 <span class="font-extrabold text-lg tracking-tight text-highlighted">
@@ -59,5 +69,9 @@ const sesion = [
                 </p>
             </div>
         </footer>
+=======
+        <!-- Footer abajo -->
+        <AppFooter />
+>>>>>>> 334d965de2f9482a8333712cac75ceaaaca1f0c3
     </div>
 </template>
