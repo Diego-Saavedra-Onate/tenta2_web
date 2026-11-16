@@ -3,9 +3,7 @@ import { z } from 'zod'
 import type { Productos } from '~/types/Productos'
 import type { Categorias } from '~/types/Categoria'
 
-definePageMeta({
-    middleware: ['admin']
-})
+
 
 const toast = useToast()
 
@@ -190,12 +188,7 @@ async function cerrarSesion() {
                     </p>
                 </div>
 
-                <div class="ml-auto">
-                    <UButton color="neutral" variant="ghost" icon="i-heroicons-arrow-right-start-on-rectangle"
-                        @click="cerrarSesion">
-                        Cerrar Sesión
-                    </UButton>
-                </div>
+
             </section>
 
             <div class="border border-dashed border-default rounded-2xl bg-elevated/40 p-6 sm:p-8 space-y-8">
@@ -322,7 +315,7 @@ async function cerrarSesion() {
                                             </span>
                                             <span class="text-xs text-muted">
                                                 Stock: <strong class="text-highlighted">{{ prod.disponibilidad
-                                                }}</strong>
+                                                    }}</strong>
                                             </span>
                                         </div>
                                     </div>
