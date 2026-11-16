@@ -66,7 +66,7 @@
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
 
-                            <a href="https://instagram.com/tenta2" target="_blank" rel="noopener noreferrer"
+                            <a href="https://instagram.com/tenta._.2" target="_blank" rel="noopener noreferrer"
                                 class="group p-5 rounded-2xl border border-default bg-elevated/40 hover:bg-elevated hover:border-primary/50 transition-all duration-200 flex items-center gap-4 text-left shadow-xs">
                                 <div
                                     class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
