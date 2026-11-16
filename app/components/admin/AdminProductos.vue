@@ -39,6 +39,34 @@ const esModoEdicion = ref(false)
 const idEdicion = ref<number | null>(null)
 const guardandoProducto = ref(false)
 const errorFormAgregar = ref('')
+const subiendoImagen = ref(false)
+
+async function seleccionarImagenProducto(event: Event) {
+    const input = event.target as HTMLInputElement
+    const archivo = input.files?.[0]
+    if (!archivo) return
+
+    subiendoImagen.value = true
+    errorFormAgregar.value = ''
+
+    try {
+        const formData = new FormData()
+        formData.append('imagen', archivo)
+
+        const res = await $fetch<{ url: string }>('/api/productos/upload', {
+            method: 'POST',
+            body: formData
+        })
+
+        formProducto.imagen = res.url
+        toast.add({ title: 'Imagen cargada correctamente', color: 'primary' })
+    } catch (err: any) {
+        errorFormAgregar.value = getApiErrorMessage(err, 'No se pudo subir la imagen.')
+    } finally {
+        subiendoImagen.value = false
+        input.value = ''
+    }
+}
 
 const mostrarConfirmBorrar = ref(false)
 const borrandoProducto = ref(false)
@@ -343,8 +371,27 @@ async function borrarProducto() {
                         </UFormField>
                     </div>
 
-                    <UFormField label="URL de la imagen" name="imagen">
-                        <UInput v-model="formProducto.imagen" placeholder="https://..." class="w-full" />
+                    <UFormField label="Imagen del producto" name="imagen">
+                        <div class="space-y-3">
+                            <div v-if="formProducto.imagen"
+                                class="relative w-full h-40 rounded-xl overflow-hidden border border-default bg-accented/20">
+                                <img :src="formProducto.imagen" alt="Vista previa" class="w-full h-full object-cover" />
+                                <UButton type="button" size="xs" color="error" variant="solid" icon="i-heroicons-trash"
+                                    class="absolute top-2 right-2" @click="formProducto.imagen = ''">
+                                    Quitar
+                                </UButton>
+                            </div>
+
+                            <div class="flex items-center gap-3">
+                                <UInput type="file" accept="image/jpeg,image/png,image/webp" :disabled="subiendoImagen"
+                                    class="w-full" @change="seleccionarImagenProducto" />
+                                <UIcon v-if="subiendoImagen" name="i-heroicons-arrow-path"
+                                    class="w-5 h-5 animate-spin text-primary shrink-0" />
+                            </div>
+                            <p class="text-xs text-muted">
+                                Formatos permitidos: JPG, PNG o WEBP (máx. 5 MB). Se guardará en el proyecto.
+                            </p>
+                        </div>
                     </UFormField>
 
                     <UFormField label="Descripción" name="descripcion">
