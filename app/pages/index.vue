@@ -76,7 +76,7 @@
                                     <p class="text-xs text-muted font-medium">Síguenos en Instagram</p>
                                     <p
                                         class="text-base font-bold text-highlighted group-hover:text-primary transition-colors">
-                                        @tenta2
+                                        @tenta._.2
                                     </p>
                                 </div>
                             </a>
