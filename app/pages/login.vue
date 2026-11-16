@@ -17,6 +17,7 @@ const formLogin = reactive({
     email: '',
     password: ''
 })
+const mostrarPassword = ref(false)
 
 const { user, fetch: fetchSession } = useUserSession()
 
@@ -84,8 +85,15 @@ async function login() {
                     </UFormField>
 
                     <UFormField label="Contraseña" name="password">
-                        <UInput v-model="formLogin.password" placeholder="••••••••" type="password" size="lg"
-                            class="w-full" />
+                        <UInput v-model="formLogin.password" :type="mostrarPassword ? 'text' : 'password'"
+                            placeholder="••••••••" class="w-full" :ui="{ trailing: 'pe-1' }">
+                            <template #trailing>
+                                <UButton type="button" color="neutral" variant="link" size="sm"
+                                    :icon="mostrarPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+                                    :aria-label="mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                                    @click="mostrarPassword = !mostrarPassword" />
+                            </template>
+                        </UInput>
                     </UFormField>
 
                     <UAlert v-if="errorForm" color="error" variant="subtle" icon="i-heroicons-exclamation-circle"

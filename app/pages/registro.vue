@@ -27,6 +27,8 @@ const form = reactive({
     password: '',
     confirmarPassword: ''
 })
+const mostrarPassword = ref(false)
+const mostrarConfirmar = ref(false)
 
 const { fetch: fetchSession } = useUserSession()
 
@@ -104,12 +106,27 @@ async function registrar() {
                     </UFormField>
 
                     <UFormField label="Contraseña" name="password">
-                        <UInput v-model="form.password" placeholder="••••••••" type="password" class="w-full" />
+                        <UInput v-model="form.password" :type="mostrarPassword ? 'text' : 'password'"
+                            placeholder="••••••••" class="w-full" :ui="{ trailing: 'pe-1' }">
+                            <template #trailing>
+                                <UButton type="button" color="neutral" variant="link" size="sm"
+                                    :icon="mostrarPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+                                    :aria-label="mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                                    @click="mostrarPassword = !mostrarPassword" />
+                            </template>
+                        </UInput>
                     </UFormField>
 
                     <UFormField label="Confirmar contraseña" name="confirmarPassword">
-                        <UInput v-model="form.confirmarPassword" placeholder="••••••••" type="password"
-                            class="w-full" />
+                        <UInput v-model="form.confirmarPassword" :type="mostrarConfirmar ? 'text' : 'password'"
+                            placeholder="••••••••" class="w-full" :ui="{ trailing: 'pe-1' }">
+                            <template #trailing>
+                                <UButton type="button" color="neutral" variant="link" size="sm"
+                                    :icon="mostrarConfirmar ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+                                    :aria-label="mostrarConfirmar ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                                    @click="mostrarConfirmar = !mostrarConfirmar" />
+                            </template>
+                        </UInput>
                     </UFormField>
 
                     <UAlert v-if="errorForm" color="error" variant="subtle" icon="i-heroicons-exclamation-circle"

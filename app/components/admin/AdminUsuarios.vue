@@ -25,6 +25,7 @@ const esEdicion = ref(false)
 const idEdicion = ref<number | null>(null)
 const guardando = ref(false)
 const errorForm = ref('')
+const mostrarPassword = ref(false)
 
 const mostrarConfirmBorrar = ref(false)
 const borrando = ref(false)
@@ -76,6 +77,7 @@ function resetForm() {
     form.vetado = false
     idEdicion.value = null
     errorForm.value = ''
+    mostrarPassword.value = false
 }
 
 function abrirModalCrearAdmin() {
@@ -94,6 +96,7 @@ function abrirModalEditar(u: UsuarioConConteo) {
     form.password = ''
     form.vetado = Boolean(u.vetado)
     errorForm.value = ''
+    mostrarPassword.value = false
     mostrarModal.value = true
 }
 
@@ -305,7 +308,15 @@ async function borrarUsuario() {
 
                     <UFormField :label="esEdicion ? 'Nueva contraseña (dejar vacío para mantener)' : 'Contraseña'"
                         name="password">
-                        <UInput v-model="form.password" type="password" placeholder="••••••••" class="w-full" />
+                        <UInput v-model="form.password" :type="mostrarPassword ? 'text' : 'password'"
+                            placeholder="••••••••" class="w-full" :ui="{ trailing: 'pe-1' }">
+                            <template #trailing>
+                                <UButton type="button" color="neutral" variant="link" size="sm"
+                                    :icon="mostrarPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+                                    :aria-label="mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                                    @click="mostrarPassword = !mostrarPassword" />
+                            </template>
+                        </UInput>
                     </UFormField>
 
                     <div v-if="esEdicion && idEdicion !== adminLogueadoId" class="pt-1">
@@ -333,7 +344,7 @@ async function borrarUsuario() {
                     <p class="text-sm text-muted">
                         ¿Estás seguro que deseas eliminar la cuenta de
                         <strong class="text-highlighted">{{ usuarioABorrar?.nombre }} {{ usuarioABorrar?.apellido
-                            }}</strong>?
+                        }}</strong>?
                         Si tiene historial de pedidos, deberás suspenderla en lugar de eliminarla.
                     </p>
 
