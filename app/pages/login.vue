@@ -69,6 +69,12 @@ async function login() {
                     <h2 class="text-lg font-bold text-highlighted pt-1">
                         Iniciar Sesión
                     </h2>
+                    <p class="text-center text-xs text-muted pt-1">
+                        ¿Aún no tienes cuenta?
+                        <NuxtLink to="/registro" class="font-semibold text-primary hover:underline">
+                            Regístrate gratis
+                        </NuxtLink>
+                    </p>
                 </div>
 
                 <UForm class="flex flex-col gap-4" :state="formLogin" :schema="schemaLogin" @submit="login">

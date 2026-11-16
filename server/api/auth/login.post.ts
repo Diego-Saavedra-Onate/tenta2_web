@@ -36,10 +36,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, message: 'Acceso al sistema suspendido' })
   }
 
-  if (usuario.rol !== 'admin') {
-    throw createError({ statusCode: 403, message: 'Acceso exclusivo para administradores' })
-  }
-
   await setUserSession(event, {
     user: {
       id: usuario.id,

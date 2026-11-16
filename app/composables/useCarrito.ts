@@ -1,0 +1,139 @@
+import type { Productos } from '~/types/Productos'
+
+export interface ItemCarrito {
+  id: number
+  nombre: string
+  categoriaNombre: string
+  precio: number
+  imagen: string
+  cantidad: number
+  disponibilidad: number
+  personalizacion: string
+}
+
+const STORAGE_KEY = 'tenta2_carrito_v1'
+
+export function useCarrito() {
+  const items = useState<ItemCarrito[]>('carrito-items', () => [])
+  const cargado = useState<boolean>('carrito-cargado', () => false)
+
+  onMounted(() => {
+    if (!cargado.value) {
+      cargado.value = true
+      try {
+        const guardado = localStorage.getItem(STORAGE_KEY)
+        if (guardado) {
+          const parsed = JSON.parse(guardado)
+          if (Array.isArray(parsed)) {
+            items.value = parsed
+          }
+        }
+      } catch {
+        items.value = []
+      }
+    }
+  })
+
+  function guardarEnStorage() {
+    if (import.meta.client) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(items.value))
+      } catch {
+        // Ignorar errores de almacenamiento
+      }
+    }
+  }
+
+  const totalUnidades = computed(() =>
+    items.value.reduce((acc, item) => acc + item.cantidad, 0)
+  )
+
+  const totalMonto = computed(() =>
+    items.value.reduce((acc, item) => acc + item.precio * item.cantidad, 0)
+  )
+
+  const diasPreparacionMinimos = computed(() => {
+    if (items.value.length === 0) return 1
+    let maxDias = 1
+
+    for (const item of items.value) {
+      const cat = (item.categoriaNombre || '').toLowerCase()
+      if (cat.includes('torta') || cat.includes('especial') || cat.includes('evento')) {
+        maxDias = Math.max(maxDias, 3)
+      } else if (cat.includes('pie') || cat.includes('tart') || cat.includes('kuchen') || cat.includes('brownie')) {
+        maxDias = Math.max(maxDias, 2)
+      }
+    }
+
+    return maxDias
+  })
+
+  function agregarProducto(producto: Productos, cantidad = 1, categoriaNombre = '') {
+    const stockMax = Number(producto.disponibilidad ?? 0)
+    if (stockMax <= 0) {
+      return { ok: false, message: 'Producto sin stock disponible' }
+    }
+
+    const existente = items.value.find((i) => i.id === producto.id)
+
+    if (existente) {
+      const nuevaCantidad = Math.min(existente.cantidad + cantidad, stockMax)
+      if (nuevaCantidad === existente.cantidad) {
+        return { ok: false, message: `Stock máximo alcanzado (${stockMax} unid.)` }
+      }
+      existente.cantidad = nuevaCantidad
+      existente.disponibilidad = stockMax
+      if (categoriaNombre) existente.categoriaNombre = categoriaNombre
+      guardarEnStorage()
+      return { ok: true, message: `Cantidad actualizada (${nuevaCantidad} en el carro)` }
+    }
+
+    items.value.push({
+      id: producto.id,
+      nombre: producto.nombre,
+      categoriaNombre: categoriaNombre || producto.categoria?.nombre || '',
+      precio: Number(producto.precio),
+      imagen: producto.imagen || '',
+      cantidad: Math.min(cantidad, stockMax),
+      disponibilidad: stockMax,
+      personalizacion: ''
+    })
+
+    guardarEnStorage()
+    return { ok: true, message: 'Producto agregado al carro' }
+  }
+
+  function actualizarCantidad(id: number, nuevaCantidad: number) {
+    const item = items.value.find((i) => i.id === id)
+    if (!item) return
+
+    if (nuevaCantidad <= 0) {
+      eliminarProducto(id)
+      return
+    }
+
+    item.cantidad = Math.min(nuevaCantidad, item.disponibilidad)
+    guardarEnStorage()
+  }
+
+  function eliminarProducto(id: number) {
+    items.value = items.value.filter((i) => i.id !== id)
+    guardarEnStorage()
+  }
+
+  function vaciarCarrito() {
+    items.value = []
+    guardarEnStorage()
+  }
+
+  return {
+    items,
+    totalUnidades,
+    totalMonto,
+    diasPreparacionMinimos,
+    agregarProducto,
+    actualizarCantidad,
+    eliminarProducto,
+    vaciarCarrito
+  }
+}

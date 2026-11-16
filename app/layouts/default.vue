@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import type { DropdownMenuItem } from '@nuxt/ui'
 import type { Usuario } from '~/types/Usuario'
 
 const route = useRoute()
 const { loggedIn, user, clear } = useUserSession()
+const { totalUnidades } = useCarrito()
 
 const usuarioActual = computed(() => user.value as Usuario | null)
 const esAdmin = computed(() => loggedIn.value && usuarioActual.value?.rol === 'admin')
@@ -27,6 +29,42 @@ const handleLogout = async () => {
     await clear()
     await navigateTo('/login')
 }
+
+const menuUsuario = computed<DropdownMenuItem[][]>(() => {
+    const acciones: DropdownMenuItem[] = []
+
+    if (esAdmin.value) {
+        acciones.push({
+            label: 'Portal de Administración',
+            icon: 'i-heroicons-squares-2x2',
+            to: '/admin'
+        })
+    } else {
+        acciones.push({
+            label: 'Mis Pedidos',
+            icon: 'i-heroicons-clipboard-document-list',
+            to: '/mis-pedidos'
+        })
+    }
+
+    acciones.push({
+        label: 'Mis Datos',
+        icon: 'i-heroicons-user-circle',
+        to: '/perfil'
+    })
+
+    return [
+        acciones,
+        [
+            {
+                label: 'Cerrar sesión',
+                icon: 'i-heroicons-arrow-right-start-on-rectangle',
+                color: 'error',
+                onSelect: handleLogout
+            }
+        ]
+    ]
+})
 </script>
 
 <template>
@@ -48,23 +86,25 @@ const handleLogout = async () => {
                     </NuxtLink>
                 </div>
 
-                <div class="flex gap-5 md:gap-6 items-center">
-                    <NuxtLink to="/carrito" :class="isActive('/carrito')
+                <div class="flex gap-4 md:gap-6 items-center">
+                    <NuxtLink to="/carrito" class="inline-flex items-center gap-1.5" :class="isActive('/carrito')
                         ? 'text-highlighted font-semibold border-b-2 border-primary pb-1'
                         : 'text-muted hover:text-highlighted transition-colors font-medium'">
-                        Carrito
+                        <span>Carrito</span>
+                        <UBadge v-if="totalUnidades > 0" color="primary" size="xs" variant="solid" class="rounded-full">
+                            {{ totalUnidades }}
+                        </UBadge>
                     </NuxtLink>
 
-                    <template v-if="loggedIn && usuarioActual">
-                        <div
-                            class="hidden sm:flex items-center gap-2 text-sm text-toned bg-elevated px-3 py-1.5 rounded-full border border-default">
-                            <UIcon name="i-lucide-user-check" class="size-4 text-primary" />
-                            <span class="font-medium">{{ usuarioActual.nombre }} {{ usuarioActual.apellido }}</span>
-                        </div>
-
-                        <UButton color="neutral" variant="ghost" icon="i-lucide-log-out" label="Cerrar sesión"
-                            class="cursor-pointer" @click="handleLogout" />
-                    </template>
+                    <UDropdownMenu v-if="loggedIn && usuarioActual" :items="menuUsuario"
+                        :content="{ align: 'end', sideOffset: 8 }">
+                        <UButton color="neutral" variant="subtle" icon="i-heroicons-user"
+                            trailing-icon="i-heroicons-chevron-down" class="rounded-full cursor-pointer">
+                            <span class="max-w-36 truncate">
+                                {{ usuarioActual.nombre }} {{ usuarioActual.apellido }}
+                            </span>
+                        </UButton>
+                    </UDropdownMenu>
 
                     <NuxtLink v-else to="/login" :class="isActive('/login')
                         ? 'text-highlighted font-semibold border-b-2 border-primary pb-1'

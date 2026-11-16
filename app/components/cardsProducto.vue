@@ -1,14 +1,30 @@
 <script setup lang="ts">
 import type { Productos } from '~/types/Productos'
 
-defineProps<{
+const props = defineProps<{
     producto: Productos
+    categoriaNombre?: string
 }>()
+
+const toast = useToast()
+const { agregarProducto } = useCarrito()
+
+const stockDisponible = computed(() => Number(props.producto.disponibilidad ?? 0))
+const sinStock = computed(() => stockDisponible.value <= 0)
 
 const formatPrice = (val: number | string) => {
     return Number(val).toLocaleString('es-CL', {
         style: 'currency',
         currency: 'CLP'
+    })
+}
+
+function handleAgregar() {
+    const res = agregarProducto(props.producto, 1, props.categoriaNombre)
+    toast.add({
+        title: res.ok ? props.producto.nombre : 'No disponible',
+        description: res.message,
+        color: res.ok ? 'primary' : 'error'
     })
 }
 </script>
@@ -25,6 +41,11 @@ const formatPrice = (val: number | string) => {
                     class="hidden absolute inset-0 flex-col items-center justify-center text-muted gap-1 bg-accented/40">
                     <UIcon name="i-heroicons-cake" class="w-10 h-10 text-primary" />
                 </div>
+
+                <span :class="sinStock ? 'bg-red-600/95 text-white' : 'bg-neutral-900/85 text-white'"
+                    class="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-semibold backdrop-blur-xs shadow-sm">
+                    {{ sinStock ? 'Agotado' : `Stock: ${stockDisponible}` }}
+                </span>
             </div>
         </template>
 
@@ -42,8 +63,9 @@ const formatPrice = (val: number | string) => {
                 <span class="font-bold text-base sm:text-lg text-primary">
                     {{ formatPrice(producto.precio) }}
                 </span>
-                <UButton size="sm" color="primary" icon="i-heroicons-plus" class="font-medium">
-                    Añadir
+                <UButton size="sm" color="primary" icon="i-heroicons-plus" class="font-medium cursor-pointer"
+                    :disabled="sinStock" @click="handleAgregar">
+                    {{ sinStock ? 'Sin stock' : 'Añadir' }}
                 </UButton>
             </div>
         </template>

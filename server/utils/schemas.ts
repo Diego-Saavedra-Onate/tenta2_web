@@ -52,3 +52,42 @@ export const editarUsuarioSchema = z.object({
   telefono: telefonoChilenoSchema,
   vetado: z.boolean().optional()
 })
+
+export const registroClienteSchema = z.object({
+  nombre: z.string().trim().min(2, 'El nombre debe tener al menos 2 caracteres').max(100),
+  apellido: z.string().trim().min(2, 'El apellido debe tener al menos 2 caracteres').max(100),
+  email: z.string().trim().toLowerCase().email('Formato de correo inválido').max(250),
+  telefono: telefonoChilenoSchema,
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres').max(100)
+})
+
+export const crearPedidoSchema = z.object({
+  rut_cliente: z
+    .string()
+    .trim()
+    .transform((val) => val.replace(/\./g, '').toUpperCase())
+    .refine((val) => /^\d{7,8}-[\dK]$/.test(val), 'Ingresa un RUT chileno válido (ej: 12.345.678-9)'),
+  nombre_cliente: z
+    .string()
+    .trim()
+    .min(3, 'El nombre de quien retira es obligatorio')
+    .max(100),
+  fecha_retiro: z
+    .string()
+    .trim()
+    .min(1, 'Debes seleccionar una fecha de retiro'),
+  items: z
+    .array(
+      z.object({
+        producto_id: z.coerce.number().int().positive(),
+        cantidad: z.coerce.number().int().min(1, 'La cantidad mínima es 1'),
+        personalizacion: z.string().trim().max(500).optional().default('')
+      })
+    )
+    .min(1, 'El carro de compras no puede estar vacío')
+})
+
+export const actualizarPedidoAdminSchema = z.object({
+  estado: z.enum(['PEN', 'ACE', 'PRE', 'LIS', 'ENT', 'RCH']),
+  fecha_retiro: z.string().trim().optional()
+})

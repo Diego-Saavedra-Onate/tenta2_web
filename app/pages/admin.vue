@@ -1,6 +1,11 @@
 <script setup lang="ts">
 const itemsTabs = [
     {
+        label: 'Pedidos',
+        icon: 'i-heroicons-clipboard-document-list',
+        slot: 'pedidos'
+    },
+    {
         label: 'Productos',
         icon: 'i-heroicons-squares-2x2',
         slot: 'productos'
@@ -26,11 +31,17 @@ const itemsTabs = [
                     Portal de Administración
                 </h1>
                 <p class="mt-2 text-sm text-muted">
-                    Gestiona los productos, categorías y cuentas de acceso de Tenta2.
+                    Gestiona los pedidos, productos, categorías y cuentas de acceso de Tenta2.
                 </p>
             </section>
 
             <UTabs :items="itemsTabs" class="w-full">
+                <template #pedidos>
+                    <div class="pt-4">
+                        <AdminPedidos />
+                    </div>
+                </template>
+
                 <template #productos>
                     <div class="pt-4">
                         <AdminProductos />

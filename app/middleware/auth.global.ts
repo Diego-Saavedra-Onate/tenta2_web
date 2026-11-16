@@ -4,12 +4,19 @@ export default defineNuxtRouteMiddleware((to) => {
   const { loggedIn, user } = useUserSession()
   const usuarioActual = user.value as Usuario | null
 
-  // Si ya inició sesión como admin e intenta ir a /login, redirigir al panel
-  if (to.path === '/login' && loggedIn.value && usuarioActual?.rol === 'admin') {
-    return navigateTo('/admin')
+  // Si ya inició sesión e intenta entrar a /login o /registro
+  if ((to.path === '/login' || to.path === '/registro') && loggedIn.value) {
+    return navigateTo(usuarioActual?.rol === 'admin' ? '/admin' : '/productos')
   }
 
-  // Protección automática de cualquier ruta bajo /admin
+  // Rutas privadas que requieren haber iniciado sesión
+  if (to.path.startsWith('/perfil') || to.path.startsWith('/mis-pedidos')) {
+    if (!loggedIn.value) {
+      return navigateTo('/login')
+    }
+  }
+
+  // Protección exclusiva de rutas bajo /admin
   if (to.path.startsWith('/admin')) {
     if (!loggedIn.value) {
       return navigateTo('/login')
