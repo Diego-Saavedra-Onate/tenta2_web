@@ -1,30 +1,36 @@
+import { requireRole } from '../../utils/auth'
+import { productoSchema } from '../../utils/schemas'
 export default defineEventHandler(async (event) => {
-  const session = await getUserSession(event)
-  const user = session.user as { rol?: string } | undefined
-
-  if (user?.rol !== 'admin') {
-    throw createError({ statusCode: 403, statusMessage: 'Acceso no autorizado' })
-  }
+  await requireRole(event, ['admin'])
 
   const id = Number(getRouterParam(event, 'id'))
-  if (isNaN(id)) {
-    throw createError({ statusCode: 400, statusMessage: 'ID inválido' })
+  if (!Number.isInteger(id) || id <= 0) {
+    throw createError({ statusCode: 400, message: 'ID de producto inválido' })
   }
 
   const method = getMethod(event)
 
   if (method === 'PUT') {
     const body = await readBody(event)
+    const parsed = productoSchema.safeParse(body)
+
+    if (!parsed.success) {
+      throw createError({
+        statusCode: 400,
+        message: parsed.error.issues[0]?.message || 'Datos del producto inválidos'
+      })
+    }
+
     return await prisma.productos.update({
       where: { id },
       data: {
-        nombre: body.nombre,
-        descripcion: body.descripcion || null,
-        precio: Number(body.precio),
-        disponibilidad: Number(body.disponibilidad),
-        producto_visible: Boolean(body.producto_visible),
-        imagen: body.imagen || null,
-        categoria_id: Number(body.categoria_id)
+        nombre: parsed.data.nombre,
+        descripcion: parsed.data.descripcion,
+        precio: parsed.data.precio,
+        disponibilidad: parsed.data.disponibilidad,
+        producto_visible: parsed.data.producto_visible,
+        imagen: parsed.data.imagen,
+        categoria_id: parsed.data.categoria_id
       }
     })
   }
@@ -35,4 +41,6 @@ export default defineEventHandler(async (event) => {
     })
     return { ok: true }
   }
+
+  throw createError({ statusCode: 405, message: 'Método no permitido' })
 })

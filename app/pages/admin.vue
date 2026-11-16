@@ -7,7 +7,9 @@ import type { Categorias } from '~/types/Categoria'
 
 const toast = useToast()
 
-const { data: categorias, pending, error, refresh } = await useFetch<Categorias[]>('/api/categorias')
+const { data: categorias, pending, error, refresh } = await useFetch<Categorias[]>('/api/categorias', {
+    query: { incluirOcultos: 'true' }
+})
 
 const mostrarProductos = ref(false)
 const categoriaSeleccionadaId = ref<number | 'todas'>('todas')
@@ -315,7 +317,7 @@ async function cerrarSesion() {
                                             </span>
                                             <span class="text-xs text-muted">
                                                 Stock: <strong class="text-highlighted">{{ prod.disponibilidad
-                                                    }}</strong>
+                                                }}</strong>
                                             </span>
                                         </div>
                                     </div>
