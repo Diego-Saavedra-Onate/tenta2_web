@@ -1,25 +1,10 @@
 <script setup lang="ts">
 const itemsTabs = [
-    {
-        label: 'Pedidos',
-        icon: 'i-heroicons-clipboard-document-list',
-        slot: 'pedidos'
-    },
-    {
-        label: 'Productos',
-        icon: 'i-heroicons-squares-2x2',
-        slot: 'productos'
-    },
-    {
-        label: 'Categorías',
-        icon: 'i-heroicons-tag',
-        slot: 'categorias'
-    },
-    {
-        label: 'Cuentas y Usuarios',
-        icon: 'i-heroicons-users',
-        slot: 'usuarios'
-    }
+    { label: 'Resumen', icon: 'i-heroicons-chart-bar', slot: 'resumen' },
+    { label: 'Pedidos', icon: 'i-heroicons-clipboard-document-list', slot: 'pedidos' },
+    { label: 'Productos', icon: 'i-heroicons-squares-2x2', slot: 'productos' },
+    { label: 'Categorías', icon: 'i-heroicons-tag', slot: 'categorias' },
+    { label: 'Cuentas y Usuarios', icon: 'i-heroicons-users', slot: 'usuarios' }
 ]
 </script>
 
@@ -39,6 +24,12 @@ const itemsTabs = [
                 <template #pedidos>
                     <div class="pt-4">
                         <AdminPedidos />
+                    </div>
+                </template>
+
+                <template #resumen>
+                    <div class="pt-4">
+                        <AdminResumen />
                     </div>
                 </template>
 
