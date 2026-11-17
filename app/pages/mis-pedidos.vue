@@ -105,6 +105,20 @@ const formatearFechaChile = (fecha: string | Date | null) => {
 const formatPrecio = (val: number | string) => {
     return '$' + Number(val).toLocaleString('es-CL')
 }
+
+const { descargandoPdfId, descargarComprobantePorPedido } = useComprobantePdf()
+
+async function handleDescargarComprobante(pedidoId: number) {
+    try {
+        await descargarComprobantePorPedido(pedidoId)
+    } catch (err: any) {
+        toast.add({
+            title: 'No se pudo descargar el PDF',
+            description: getApiErrorMessage(err, 'Intenta nuevamente en unos segundos.'),
+            color: 'error'
+        })
+    }
+}
 </script>
 
 <template>
@@ -238,11 +252,26 @@ const formatPrecio = (val: number | string) => {
                                     }}</strong>
                                 </span>
                             </div>
-                            <a :href="pg.comprobante" target="_blank" rel="noopener"
-                                class="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1">
-                                <UIcon name="i-heroicons-document-magnifying-glass" class="w-4 h-4" />
-                                Ver archivo
-                            </a>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <a :href="pg.comprobante" target="_blank" rel="noopener"
+                                    class="text-xs font-semibold text-muted hover:text-highlighted inline-flex items-center gap-1">
+                                    <UIcon name="i-heroicons-paper-clip" class="w-4 h-4" />
+                                    Transferencia subida
+                                </a>
+
+                                <template v-if="pg.estado === 'CON'">
+                                    <UButton :to="`/comprobante/${ped.id}`" size="xs" color="neutral" variant="outline"
+                                        icon="i-heroicons-eye">
+                                        Ver Comprobante
+                                    </UButton>
+
+                                    <UButton size="xs" color="primary" variant="subtle"
+                                        icon="i-heroicons-arrow-down-tray" :loading="descargandoPdfId === ped.id"
+                                        @click="handleDescargarComprobante(ped.id)">
+                                        Descargar PDF
+                                    </UButton>
+                                </template>
+                            </div>
                         </div>
                     </div>
 

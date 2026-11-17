@@ -109,6 +109,20 @@ async function validarPago(pagoId: number, nuevoEstado: 'CON' | 'RCH') {
         validandoPagoId.value = null
     }
 }
+
+const { descargandoPdfId, descargarComprobantePorPedido } = useComprobantePdf()
+
+async function handleDescargarComprobante(pedidoId: number) {
+    try {
+        await descargarComprobantePorPedido(pedidoId)
+    } catch (err: any) {
+        toast.add({
+            title: 'No se pudo descargar el PDF',
+            description: getApiErrorMessage(err, 'No fue posible generar el archivo PDF.'),
+            color: 'error'
+        })
+    }
+}
 </script>
 
 <template>
@@ -230,6 +244,18 @@ async function validarPago(pagoId: number, nuevoEstado: 'CON' | 'RCH') {
                             <UButton size="xs" color="error" variant="subtle" icon="i-heroicons-x-circle"
                                 :loading="validandoPagoId === pg.id" @click="validarPago(pg.id, 'RCH')">
                                 Rechazar Pago
+                            </UButton>
+                        </div>
+
+                        <div v-else-if="pg.estado === 'CON'" class="flex flex-wrap gap-2 shrink-0">
+                            <UButton :to="`/comprobante/${ped.id}`" size="xs" color="neutral" variant="outline"
+                                icon="i-heroicons-eye">
+                                Ver Comprobante
+                            </UButton>
+
+                            <UButton size="xs" color="primary" variant="subtle" icon="i-heroicons-arrow-down-tray"
+                                :loading="descargandoPdfId === ped.id" @click="handleDescargarComprobante(ped.id)">
+                                Descargar PDF
                             </UButton>
                         </div>
                     </div>
