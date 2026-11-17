@@ -3,6 +3,7 @@ const toast = useToast()
 
 const estadoFiltro = ref<string>('TODOS')
 const actualizandoId = ref<number | null>(null)
+const validandoPagoId = ref<number | null>(null)
 const fechasEditadas = reactive<Record<number, string>>({})
 
 const estadosOpciones = [
@@ -21,6 +22,12 @@ const etiquetasEstado: Record<string, { texto: string; color: any }> = {
     PRE: { texto: 'En preparación', color: 'primary' },
     LIS: { texto: 'Listo para retiro', color: 'success' },
     ENT: { texto: 'Entregado', color: 'neutral' },
+    RCH: { texto: 'Rechazado', color: 'error' }
+}
+
+const etiquetasPago: Record<string, { texto: string; color: any }> = {
+    PEN: { texto: 'Pendiente de verificación', color: 'warning' },
+    CON: { texto: 'Confirmado', color: 'success' },
     RCH: { texto: 'Rechazado', color: 'error' }
 }
 
@@ -76,6 +83,32 @@ async function cambiarEstado(pedidoId: number, nuevoEstado: string) {
         actualizandoId.value = null
     }
 }
+
+async function validarPago(pagoId: number, nuevoEstado: 'CON' | 'RCH') {
+    validandoPagoId.value = pagoId
+    try {
+        await $fetch(`/api/pagos/${pagoId}`, {
+            method: 'PUT',
+            body: { estado: nuevoEstado }
+        })
+        toast.add({
+            title: nuevoEstado === 'CON' ? 'Pago confirmado' : 'Comprobante rechazado',
+            description: nuevoEstado === 'CON'
+                ? 'El pedido avanzó automáticamente a En Preparación (PRE).'
+                : 'Se notificará al cliente para que suba un nuevo comprobante.',
+            color: nuevoEstado === 'CON' ? 'primary' : 'neutral'
+        })
+        await refresh()
+    } catch (err: any) {
+        toast.add({
+            title: 'Error al validar pago',
+            description: getApiErrorMessage(err, 'No se pudo procesar la validación del comprobante'),
+            color: 'error'
+        })
+    } finally {
+        validandoPagoId.value = null
+    }
+}
 </script>
 
 <template>
@@ -86,7 +119,7 @@ async function cambiarEstado(pedidoId: number, nuevoEstado: string) {
                     Gestión de Pedidos
                 </h2>
                 <p class="text-sm text-muted mt-1">
-                    Evalúa solicitudes, confirma fechas de retiro y actualiza el avance en cocina.
+                    Evalúa solicitudes, valida transferencias y actualiza el avance en cocina.
                 </p>
             </div>
 
@@ -163,6 +196,43 @@ async function cambiarEstado(pedidoId: number, nuevoEstado: string) {
                             </span>
                         </li>
                     </ul>
+                </div>
+
+                <!-- Sección de Comprobantes de Pago -->
+                <div v-if="ped.pagos && ped.pagos.length > 0" class="space-y-2 pt-2">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-muted">
+                        Comprobantes de Transferencia Recibidos:
+                    </p>
+                    <div v-for="pg in ped.pagos" :key="pg.id"
+                        class="p-3.5 rounded-xl border border-default bg-default/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="space-y-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <UBadge :color="etiquetasPago[pg.estado]?.color || 'neutral'" variant="subtle"
+                                    size="xs">
+                                    {{ etiquetasPago[pg.estado]?.texto || pg.estado }}
+                                </UBadge>
+                                <span class="text-xs font-semibold text-highlighted">
+                                    Monto transferido: {{ formatPrecio(pg.monto) }}
+                                </span>
+                            </div>
+                            <a :href="pg.comprobante" target="_blank" rel="noopener"
+                                class="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1">
+                                <UIcon name="i-heroicons-document-magnifying-glass" class="w-4 h-4" />
+                                Abrir comprobante adjunto
+                            </a>
+                        </div>
+
+                        <div v-if="pg.estado === 'PEN'" class="flex gap-2 shrink-0">
+                            <UButton size="xs" color="primary" icon="i-heroicons-check-circle"
+                                :loading="validandoPagoId === pg.id" @click="validarPago(pg.id, 'CON')">
+                                Confirmar Pago
+                            </UButton>
+                            <UButton size="xs" color="error" variant="subtle" icon="i-heroicons-x-circle"
+                                :loading="validandoPagoId === pg.id" @click="validarPago(pg.id, 'RCH')">
+                                Rechazar Pago
+                            </UButton>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-3 border-t border-default">

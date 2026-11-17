@@ -58,9 +58,9 @@ export function useCarrito() {
 
     for (const item of items.value) {
       const cat = (item.categoriaNombre || '').toLowerCase()
-      if (cat.includes('torta') || cat.includes('especial') || cat.includes('evento')) {
+      if (cat.includes('Tortas') || cat.includes('Especiales') || cat.includes('Eventos')) {
         maxDias = Math.max(maxDias, 3)
-      } else if (cat.includes('pie') || cat.includes('tart') || cat.includes('kuchen') || cat.includes('brownie')) {
+      } else if (cat.includes('Brownies') || cat.includes('Pastelitos') || cat.includes('Tartaletas') || cat.includes('Salados')) {
         maxDias = Math.max(maxDias, 2)
       }
     }

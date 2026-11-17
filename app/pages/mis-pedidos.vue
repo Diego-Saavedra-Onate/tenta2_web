@@ -1,5 +1,19 @@
 <script setup lang="ts">
+const toast = useToast()
 const { data: pedidos, pending, error, refresh } = await useFetch<any[]>('/api/pedidos')
+
+const archivosSeleccionados = reactive<Record<number, File | null>>({})
+const montosIngresados = reactive<Record<number, number>>({})
+const subiendoPagoId = ref<number | null>(null)
+
+watch(pedidos, (lista) => {
+    if (!lista) return
+    for (const p of lista) {
+        if (montosIngresados[p.id] === undefined) {
+            montosIngresados[p.id] = Number(p.monto_total)
+        }
+    }
+}, { immediate: true })
 
 const pasosFlujo = [
     { codigo: 'PEN', titulo: 'Pendiente', desc: 'En revisión por la pastelería' },
@@ -18,8 +32,67 @@ const etiquetasEstado: Record<string, { texto: string; color: any }> = {
     RCH: { texto: 'Rechazado', color: 'error' }
 }
 
+const etiquetasPago: Record<string, { texto: string; color: any }> = {
+    PEN: { texto: 'Comprobante en revisión', color: 'warning' },
+    CON: { texto: 'Pago confirmado', color: 'success' },
+    RCH: { texto: 'Comprobante rechazado (sube uno nuevo)', color: 'error' }
+}
+
 function indicePaso(estado: string) {
     return pasosFlujo.findIndex((p) => p.codigo === estado)
+}
+
+function puedeSubirComprobante(ped: any) {
+    if (ped.estado !== 'ACE') return false
+    const pagos = ped.pagos ?? []
+    return !pagos.some((pg: any) => pg.estado === 'PEN' || pg.estado === 'CON')
+}
+
+function seleccionarArchivo(pedidoId: number, event: Event) {
+    const input = event.target as HTMLInputElement
+    archivosSeleccionados[pedidoId] = input.files?.[0] ?? null
+}
+
+async function enviarComprobante(ped: any) {
+    const archivo = archivosSeleccionados[ped.id]
+    if (!archivo) {
+        toast.add({
+            title: 'Archivo requerido',
+            description: 'Selecciona una imagen o PDF de tu comprobante de transferencia.',
+            color: 'error'
+        })
+        return
+    }
+
+    subiendoPagoId.value = ped.id
+
+    try {
+        const formData = new FormData()
+        formData.append('pedido_id', String(ped.id))
+        formData.append('monto', String(montosIngresados[ped.id] ?? ped.monto_total))
+        formData.append('comprobante', archivo)
+
+        await $fetch('/api/pagos', {
+            method: 'POST',
+            body: formData
+        })
+
+        archivosSeleccionados[ped.id] = null
+        toast.add({
+            title: 'Comprobante enviado',
+            description: 'La pastelería verificará tu transferencia a la brevedad.',
+            color: 'primary'
+        })
+        await refresh()
+    } catch (err: any) {
+        toast.add({
+            title: 'Error al subir comprobante',
+            description: getApiErrorMessage(err, 'No se pudo cargar el comprobante.'),
+            color: 'error'
+        })
+    } finally {
+        subiendoPagoId.value = null
+    }
 }
 
 const formatearFechaChile = (fecha: string | Date | null) => {
@@ -43,7 +116,7 @@ const formatPrecio = (val: number | string) => {
                         Mis Pedidos
                     </h1>
                     <p class="text-sm text-muted mt-1">
-                        Revisa el estado en tiempo real y el detalle de tus solicitudes en Tenta2.
+                        Revisa el estado en tiempo real, adjunta tu comprobante de pago y sigue tu pedido.
                     </p>
                 </div>
 
@@ -94,7 +167,7 @@ const formatPrecio = (val: number | string) => {
                             </div>
                             <p class="text-xs text-muted">
                                 Solicitado el {{ formatearFechaChile(ped.fecha_pedido) }} ·
-                                Retiro estimado: <strong class="text-highlighted">{{
+                                Retiro comprometido: <strong class="text-highlighted">{{
                                     formatearFechaChile(ped.fecha_retiro) }}</strong>
                             </p>
                         </div>
@@ -146,6 +219,83 @@ const formatPrecio = (val: number | string) => {
                                 </span>
                             </li>
                         </ul>
+                    </div>
+
+                    <!-- Historial de comprobantes subidos -->
+                    <div v-if="ped.pagos && ped.pagos.length > 0" class="space-y-2 pt-2 border-t border-default">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-muted">
+                            Comprobantes de Transferencia:
+                        </p>
+                        <div v-for="pg in ped.pagos" :key="pg.id"
+                            class="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl border border-default bg-default/40 text-sm">
+                            <div class="flex items-center gap-2.5">
+                                <UBadge :color="etiquetasPago[pg.estado]?.color || 'neutral'" variant="subtle"
+                                    size="xs">
+                                    {{ etiquetasPago[pg.estado]?.texto || pg.estado }}
+                                </UBadge>
+                                <span class="text-xs text-muted">
+                                    Monto informado: <strong class="text-highlighted">{{ formatPrecio(pg.monto)
+                                    }}</strong>
+                                </span>
+                            </div>
+                            <a :href="pg.comprobante" target="_blank" rel="noopener"
+                                class="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1">
+                                <UIcon name="i-heroicons-document-magnifying-glass" class="w-4 h-4" />
+                                Ver archivo
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Formulario de transferencia cuando el pedido está en ACE -->
+                    <div v-if="puedeSubirComprobante(ped)"
+                        class="p-5 rounded-xl border border-primary/40 bg-primary/5 space-y-4">
+                        <div class="space-y-1">
+                            <h3 class="text-sm font-extrabold text-highlighted flex items-center gap-2">
+                                <UIcon name="i-heroicons-banknotes" class="w-5 h-5 text-primary" />
+                                Datos para Transferencia Bancaria
+                            </h3>
+                            <p class="text-xs text-muted">
+                                Tu pedido fue aceptado. Transfiere el total y adjunta el comprobante para iniciar la
+                                preparación en cocina:
+                            </p>
+                        </div>
+
+                        <div
+                            class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-default/80 p-3.5 rounded-lg border border-default">
+                            <div><span class="text-muted">Titular:</span> <strong>Pastelería Tenta2</strong></div>
+                            <div><span class="text-muted">Banco:</span> <strong>BancoEstado / Cuenta Vista</strong>
+                            </div>
+                            <div><span class="text-muted">RUT:</span> <strong class="font-mono">77.123.456-7</strong>
+                            </div>
+                            <div><span class="text-muted">N° Cuenta:</span> <strong
+                                    class="font-mono">00123456789</strong></div>
+                            <div class="sm:col-span-2"><span class="text-muted">Asunto / Correo:</span>
+                                <strong>pagos@tenta2.cl (Indicar Pedido #{{ ped.id }})</strong>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                            <div class="sm:col-span-4">
+                                <label class="text-xs font-semibold text-muted block mb-1">Monto transferido
+                                    (CLP)</label>
+                                <UInput v-model.number="montosIngresados[ped.id]" type="number" class="w-full" />
+                            </div>
+
+                            <div class="sm:col-span-5">
+                                <label class="text-xs font-semibold text-muted block mb-1">Comprobante (JPG, PNG, WEBP o
+                                    PDF)</label>
+                                <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf"
+                                    class="block w-full text-xs text-muted file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border file:border-default file:text-xs file:font-semibold file:bg-elevated file:text-highlighted hover:file:bg-accented/30 cursor-pointer"
+                                    @change="seleccionarArchivo(ped.id, $event)" />
+                            </div>
+
+                            <div class="sm:col-span-3">
+                                <UButton color="primary" block icon="i-heroicons-arrow-up-tray"
+                                    :loading="subiendoPagoId === ped.id" @click="enviarComprobante(ped)">
+                                    Subir Pago
+                                </UButton>
+                            </div>
+                        </div>
                     </div>
                 </UCard>
             </div>
