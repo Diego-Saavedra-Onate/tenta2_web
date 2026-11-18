@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Usuario } from '~/types/Usuario'
 import FechaInputChile from '~/components/FechaInputChile.vue'
+import { UMBRAL_PRODUCTOS_PEQUENOS } from '~/composables/useCarrito'
 
 const toast = useToast()
 const { loggedIn, user } = useUserSession()
@@ -10,6 +11,7 @@ const esAdmin = computed(() => usuarioActual.value?.rol === 'admin')
 const {
     items,
     totalMonto,
+    totalUnidadesPequenos,
     diasPreparacionMinimos,
     actualizarCantidad,
     eliminarProducto,
@@ -37,8 +39,8 @@ const fechaMinimaISO = computed(() => {
     return `${y}-${m}-${d}`
 })
 
-watch(fechaMinimaISO, (minVal) => {
-    if (!fechaRetiro.value || fechaRetiro.value < minVal) {
+watch(fechaMinimaISO, (minVal, oldMinVal) => {
+    if (!fechaRetiro.value || fechaRetiro.value < minVal || fechaRetiro.value === oldMinVal) {
         fechaRetiro.value = minVal
     }
 }, { immediate: true })
@@ -236,10 +238,25 @@ async function confirmarCompra() {
                             <UFormField label="Fecha sugerida de retiro (sujeta a confirmación)" class="sm:col-span-2">
                                 <div class="space-y-1.5">
                                     <FechaInputChile v-model="fechaRetiro" :min="fechaMinimaISO" />
-                                    <p class="text-xs text-muted">
-                                        Disponible desde el <strong class="text-highlighted">{{
-                                            formatearFechaChile(fechaMinimaISO) }}</strong>
-                                        ({{ diasPreparacionMinimos }} día(s) de preparación según categoría).
+                                    <p class="text-xs text-muted leading-relaxed">
+                                        <template v-if="diasPreparacionMinimos === 0">
+                                            <span class="font-semibold text-emerald-600">
+                                                ¡Disponible para retiro hoy mismo ({{
+                                                    formatearFechaChile(fechaMinimaISO) }})!
+                                            </span>
+                                            (Pedidos menores a {{ UMBRAL_PRODUCTOS_PEQUENOS }} unidades de productos
+                                            pequeños).
+                                        </template>
+                                        <template v-else>
+                                            Disponible desde el <strong class="text-highlighted">{{
+                                                formatearFechaChile(fechaMinimaISO) }}</strong>
+                                            ({{ diasPreparacionMinimos }} día(s) de preparación).
+                                            <span v-if="totalUnidadesPequenos >= UMBRAL_PRODUCTOS_PEQUENOS"
+                                                class="text-primary font-medium">
+                                                Al llevar {{ totalUnidadesPequenos }} unidades de productos pequeños (≥
+                                                {{ UMBRAL_PRODUCTOS_PEQUENOS }}), el retiro pasa al día siguiente.
+                                            </span>
+                                        </template>
                                         Fecha seleccionada: <strong class="text-primary">{{
                                             formatearFechaChile(fechaRetiro) }}</strong>.
                                     </p>

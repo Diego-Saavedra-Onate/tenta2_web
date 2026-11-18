@@ -13,6 +13,7 @@ export interface ItemCarrito {
 }
 
 const STORAGE_KEY = 'tenta2_carrito_v1'
+export const UMBRAL_PRODUCTOS_PEQUENOS = 6
 
 export function useCarrito() {
   const { user } = useUserSession()
@@ -56,12 +57,25 @@ export function useCarrito() {
     items.value.reduce((acc, item) => acc + item.precio * item.cantidad, 0)
   )
 
+  const totalUnidadesPequenos = computed(() => {
+    const categoriasPequenas = ['brownies', 'galletas', 'pastelitos']
+    return items.value.reduce((acc, item) => {
+      const cat = (item.categoriaNombre || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+      return categoriasPequenas.some((c) => cat.includes(c)) ? acc + item.cantidad : acc
+    }, 0)
+  })
+
   const diasPreparacionMinimos = computed(() => {
-    if (items.value.length === 0) return 1
+    if (items.value.length === 0) return 0
     let maxDias = 0
 
     const categorias3Dias = ['tortas', 'especiales', 'eventos']
-    const categorias2Dias = ['brownies', 'pastelitos', 'tartaletas', 'salados']
+    const categorias2Dias = ['tartaletas', 'salados']
+    const categoriasPequenas = ['brownies', 'galletas', 'pastelitos']
 
     for (const item of items.value) {
       const cat = (item.categoriaNombre || '')
@@ -71,8 +85,13 @@ export function useCarrito() {
         .trim()
 
       if (categorias3Dias.some((c) => cat.includes(c))) {
-        maxDias = Math.max(maxDias, 2)
+        maxDias = Math.max(maxDias, 3)
       } else if (categorias2Dias.some((c) => cat.includes(c))) {
+        maxDias = Math.max(maxDias, 2)
+      } else if (categoriasPequenas.some((c) => cat.includes(c))) {
+        const diasPequenos = totalUnidadesPequenos.value >= UMBRAL_PRODUCTOS_PEQUENOS ? 1 : 0
+        maxDias = Math.max(maxDias, diasPequenos)
+      } else {
         maxDias = Math.max(maxDias, 1)
       }
     }
@@ -155,6 +174,7 @@ export function useCarrito() {
     items,
     totalUnidades,
     totalMonto,
+    totalUnidadesPequenos,
     diasPreparacionMinimos,
     agregarProducto,
     actualizarCantidad,
