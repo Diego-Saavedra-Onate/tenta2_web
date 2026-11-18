@@ -52,15 +52,23 @@ export function useCarrito() {
     items.value.reduce((acc, item) => acc + item.precio * item.cantidad, 0)
   )
 
-  const diasPreparacionMinimos = computed(() => {
+const diasPreparacionMinimos = computed(() => {
     if (items.value.length === 0) return 1
     let maxDias = 1
 
+    const categorias3Dias = ['tortas', 'especiales', 'eventos']
+    const categorias2Dias = ['brownies', 'pastelitos', 'tartaletas', 'salados']
+
     for (const item of items.value) {
-      const cat = (item.categoriaNombre || '').toLowerCase()
-      if (cat.includes('Tortas') || cat.includes('Especiales') || cat.includes('Eventos')) {
+      const cat = (item.categoriaNombre || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+
+      if (categorias3Dias.some((c) => cat.includes(c))) {
         maxDias = Math.max(maxDias, 3)
-      } else if (cat.includes('Brownies') || cat.includes('Pastelitos') || cat.includes('Tartaletas') || cat.includes('Salados')) {
+      } else if (categorias2Dias.some((c) => cat.includes(c))) {
         maxDias = Math.max(maxDias, 2)
       }
     }
@@ -74,6 +82,12 @@ export function useCarrito() {
       return { ok: false, message: 'Producto sin stock disponible' }
     }
 
+    const nombreCatResuelto =
+      categoriaNombre ||
+      producto.categoria?.nombre ||
+      (producto as any).categoriaNombre ||
+      ''
+
     const existente = items.value.find((i) => i.id === producto.id)
 
     if (existente) {
@@ -83,7 +97,7 @@ export function useCarrito() {
       }
       existente.cantidad = nuevaCantidad
       existente.disponibilidad = stockMax
-      if (categoriaNombre) existente.categoriaNombre = categoriaNombre
+      if (nombreCatResuelto) existente.categoriaNombre = nombreCatResuelto
       guardarEnStorage()
       return { ok: true, message: `Cantidad actualizada (${nuevaCantidad} en el carro)` }
     }
@@ -91,7 +105,7 @@ export function useCarrito() {
     items.value.push({
       id: producto.id,
       nombre: producto.nombre,
-      categoriaNombre: categoriaNombre || producto.categoria?.nombre || '',
+      categoriaNombre: nombreCatResuelto,
       precio: Number(producto.precio),
       imagen: producto.imagen || '',
       cantidad: Math.min(cantidad, stockMax),

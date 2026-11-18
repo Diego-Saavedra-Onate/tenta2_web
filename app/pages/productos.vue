@@ -18,7 +18,7 @@ const opcionesOrden = [
     { label: 'Mayor precio primero', value: 'desc' }
 ]
 
-const categoriasFiltradas = computed(() => {
+const categoriasFiltradas = computed<Categorias[]>(() => {
     if (!categorias.value) return []
 
     const termino = busqueda.value.trim().toLowerCase()
@@ -26,7 +26,14 @@ const categoriasFiltradas = computed(() => {
     return categorias.value
         .filter(cat => categoriaSeleccionada.value === 'todas' || cat.id === categoriaSeleccionada.value)
         .map(cat => {
-            let productos = [...(cat.producto ?? [])]
+            let productos = (cat.producto ?? []).map(p => ({
+                ...p,
+                categoria: p.categoria ?? {
+                    id: cat.id,
+                    nombre: cat.nombre,
+                    descripcion: cat.descripcion ?? null
+                }
+            }))
 
             if (termino) {
                 productos = productos.filter(p =>
@@ -38,20 +45,20 @@ const categoriasFiltradas = computed(() => {
             return {
                 ...cat,
                 producto: productos
-            }
+            } as Categorias
         })
-        .filter(cat => !termino || cat.producto.length > 0)
+        .filter(cat => !termino || (cat.producto?.length ?? 0) > 0)
 })
 
 const productosOrdenados = computed(() => {
     const todos = categoriasFiltradas.value.flatMap(cat => cat.producto ?? [])
 
     if (ordenPrecio.value === 'asc') {
-        return todos.sort((a, b) => Number(a.precio) - Number(b.precio))
+        return [...todos].sort((a, b) => Number(a.precio) - Number(b.precio))
     }
 
     if (ordenPrecio.value === 'desc') {
-        return todos.sort((a, b) => Number(b.precio) - Number(a.precio))
+        return [...todos].sort((a, b) => Number(b.precio) - Number(a.precio))
     }
 
     return todos
