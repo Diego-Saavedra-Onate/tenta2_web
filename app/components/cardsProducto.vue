@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Productos } from '~/types/Productos'
+import type { Usuario } from '~/types/Usuario'
 
 const props = defineProps<{
     producto: Productos
@@ -7,8 +8,10 @@ const props = defineProps<{
 }>()
 
 const toast = useToast()
+const { loggedIn, user } = useUserSession()
 const { agregarProducto } = useCarrito()
 
+const esAdmin = computed(() => loggedIn.value && (user.value as Usuario | null)?.rol === 'admin')
 const stockDisponible = computed(() => Number(props.producto.disponibilidad ?? 0))
 const sinStock = computed(() => stockDisponible.value <= 0)
 
@@ -63,8 +66,8 @@ function handleAgregar() {
                 <span class="font-bold text-base sm:text-lg text-primary">
                     {{ formatPrice(producto.precio) }}
                 </span>
-                <UButton size="sm" color="primary" icon="i-heroicons-plus" class="font-medium cursor-pointer"
-                    :disabled="sinStock" @click="handleAgregar">
+                <UButton v-if="!esAdmin" size="sm" color="primary" icon="i-heroicons-plus"
+                    class="font-medium cursor-pointer" :disabled="sinStock" @click="handleAgregar">
                     {{ sinStock ? 'Sin stock' : 'Añadir' }}
                 </UButton>
             </div>

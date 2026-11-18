@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { Usuario } from '~/types/Usuario'
+import FechaInputChile from '~/components/FechaInputChile.vue'
 
 const toast = useToast()
 const { loggedIn, user } = useUserSession()
 const usuarioActual = computed(() => user.value as Usuario | null)
+const esAdmin = computed(() => usuarioActual.value?.rol === 'admin')
 
 const {
     items,
@@ -53,6 +55,8 @@ const formatPrecio = (valor: number) => {
 }
 
 async function confirmarCompra() {
+    if (esAdmin.value) return
+
     if (!loggedIn.value) {
         await navigateTo('/login')
         return
@@ -104,7 +108,25 @@ async function confirmarCompra() {
                 </p>
             </div>
 
-            <div v-if="items.length === 0"
+            <!-- Bloqueo exclusivo para administradores -->
+            <div v-if="esAdmin"
+                class="border border-dashed border-default rounded-2xl bg-elevated/40 p-12 text-center space-y-4">
+                <UIcon name="i-heroicons-shield-exclamation" class="w-16 h-16 text-primary mx-auto" />
+                <div class="space-y-1">
+                    <h3 class="text-lg font-bold text-highlighted">
+                        Acceso restringido para administradores
+                    </h3>
+                    <p class="text-sm text-muted max-w-md mx-auto">
+                        Las cuentas de administración están destinadas exclusivamente a la gestión del local y no pueden
+                        realizar compras.
+                    </p>
+                </div>
+                <UButton to="/admin" color="primary" icon="i-heroicons-cog-6-tooth" class="mt-2 font-medium">
+                    Ir al Panel de Administración
+                </UButton>
+            </div>
+
+            <div v-else-if="items.length === 0"
                 class="border border-dashed border-default rounded-2xl bg-elevated/40 p-12 text-center space-y-4">
                 <UIcon name="i-heroicons-shopping-cart" class="w-16 h-16 text-muted mx-auto" />
                 <div class="space-y-1">
@@ -213,7 +235,7 @@ async function confirmarCompra() {
 
                             <UFormField label="Fecha sugerida de retiro (sujeta a confirmación)" class="sm:col-span-2">
                                 <div class="space-y-1.5">
-                                    <UInput v-model="fechaRetiro" type="date" :min="fechaMinimaISO" class="w-full" />
+                                    <FechaInputChile v-model="fechaRetiro" :min="fechaMinimaISO" />
                                     <p class="text-xs text-muted">
                                         Disponible desde el <strong class="text-highlighted">{{
                                             formatearFechaChile(fechaMinimaISO) }}</strong>

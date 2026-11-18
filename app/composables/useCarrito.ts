@@ -1,4 +1,5 @@
 import type { Productos } from '~/types/Productos'
+import type { Usuario } from '~/types/Usuario'
 
 export interface ItemCarrito {
   id: number
@@ -14,6 +15,9 @@ export interface ItemCarrito {
 const STORAGE_KEY = 'tenta2_carrito_v1'
 
 export function useCarrito() {
+  const { user } = useUserSession()
+  const esAdmin = computed(() => (user.value as Usuario | null)?.rol === 'admin')
+
   const items = useState<ItemCarrito[]>('carrito-items', () => [])
   const cargado = useState<boolean>('carrito-cargado', () => false)
 
@@ -52,9 +56,9 @@ export function useCarrito() {
     items.value.reduce((acc, item) => acc + item.precio * item.cantidad, 0)
   )
 
-const diasPreparacionMinimos = computed(() => {
+  const diasPreparacionMinimos = computed(() => {
     if (items.value.length === 0) return 1
-    let maxDias = 1
+    let maxDias = 0
 
     const categorias3Dias = ['tortas', 'especiales', 'eventos']
     const categorias2Dias = ['brownies', 'pastelitos', 'tartaletas', 'salados']
@@ -67,9 +71,9 @@ const diasPreparacionMinimos = computed(() => {
         .trim()
 
       if (categorias3Dias.some((c) => cat.includes(c))) {
-        maxDias = Math.max(maxDias, 3)
-      } else if (categorias2Dias.some((c) => cat.includes(c))) {
         maxDias = Math.max(maxDias, 2)
+      } else if (categorias2Dias.some((c) => cat.includes(c))) {
+        maxDias = Math.max(maxDias, 1)
       }
     }
 
@@ -77,6 +81,13 @@ const diasPreparacionMinimos = computed(() => {
   })
 
   function agregarProducto(producto: Productos, cantidad = 1, categoriaNombre = '') {
+    if (esAdmin.value) {
+      return {
+        ok: false,
+        message: 'Las cuentas de administración no pueden agregar productos al carro'
+      }
+    }
+
     const stockMax = Number(producto.disponibilidad ?? 0)
     if (stockMax <= 0) {
       return { ok: false, message: 'Producto sin stock disponible' }

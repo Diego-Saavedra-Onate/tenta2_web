@@ -2,7 +2,7 @@ import { crearPedidoSchema } from '../../utils/schemas'
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
-  const sessionUser = session.user as { id: number; vetado?: boolean }
+  const sessionUser = session.user as { id: number; vetado?: boolean; rol?:string }
 
   if (sessionUser.vetado) {
     throw createError({
@@ -10,6 +10,12 @@ export default defineEventHandler(async (event) => {
       message: 'Tu cuenta se encuentra suspendida para realizar pedidos'
     })
   }
+  if (sessionUser.rol === 'admin') {
+  throw createError({
+    statusCode: 403,
+    message: 'Las cuentas de administrador no pueden realizar pedidos'
+  })
+}
 
   const body = await readBody(event)
   const parsed = crearPedidoSchema.safeParse(body)

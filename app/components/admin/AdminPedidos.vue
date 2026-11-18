@@ -1,10 +1,20 @@
 <script setup lang="ts">
+import FechaInputChile from '~/components/FechaInputChile.vue'
+
 const toast = useToast()
 
 const estadoFiltro = ref<string>('TODOS')
 const actualizandoId = ref<number | null>(null)
 const validandoPagoId = ref<number | null>(null)
 const fechasEditadas = reactive<Record<number, string>>({})
+
+const fechaHoyISO = computed(() => {
+    const hoy = new Date()
+    const y = hoy.getFullYear()
+    const m = String(hoy.getMonth() + 1).padStart(2, '0')
+    const d = String(hoy.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+})
 
 const estadosOpciones = [
     { label: 'Todos', value: 'TODOS' },
@@ -58,13 +68,23 @@ const formatPrecio = (val: number | string) => {
 }
 
 async function cambiarEstado(pedidoId: number, nuevoEstado: string) {
+    const fechaSeleccionada = fechasEditadas[pedidoId]
+    if (fechaSeleccionada && fechaSeleccionada < fechaHoyISO.value && nuevoEstado !== 'RCH') {
+        toast.add({
+            title: 'Fecha inválida',
+            description: `La fecha de retiro no puede ser anterior a hoy (${formatearFechaChile(fechaHoyISO.value)}).`,
+            color: 'error'
+        })
+        return
+    }
+
     actualizandoId.value = pedidoId
     try {
         await $fetch(`/api/pedidos/${pedidoId}`, {
             method: 'PUT',
             body: {
                 estado: nuevoEstado,
-                fecha_retiro: fechasEditadas[pedidoId] || undefined
+                fecha_retiro: fechaSeleccionada || undefined
             }
         })
         toast.add({
@@ -160,7 +180,8 @@ async function handleDescargarComprobante(pedidoId: number) {
 
         <div v-else class="space-y-5">
             <UCard v-for="ped in pedidos" :key="ped.id"
-                class="border border-default bg-elevated rounded-xl shadow-xs space-y-4">
+                class="border border-default bg-elevated rounded-xl shadow-xs space-y-5">
+                <!-- Cabecera del Pedido -->
                 <div
                     class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-default pb-4">
                     <div class="space-y-1">
@@ -190,31 +211,61 @@ async function handleDescargarComprobante(pedidoId: number) {
                     </div>
                 </div>
 
-                <div class="space-y-2">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-muted">
-                        Productos y Personalización:
-                    </p>
-                    <ul class="divide-y divide-default border border-default rounded-lg bg-default/50">
-                        <li v-for="det in ped.detalles" :key="det.id"
-                            class="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-sm">
-                            <div>
-                                <span class="font-bold text-highlighted">
-                                    {{ det.cantidad }}x {{ det.producto?.nombre }}
+                <!-- Detalle Estético de Productos y Personalización -->
+                <div class="space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs font-bold uppercase tracking-wider text-muted flex items-center gap-1.5">
+                            <UIcon name="i-heroicons-shopping-bag" class="w-4 h-4 text-primary" />
+                            Productos y Personalización ({{ ped.detalles?.length || 0 }})
+                        </p>
+                    </div>
+
+                    <div class="border border-default rounded-xl bg-default/60 divide-y divide-default overflow-hidden">
+                        <div v-for="det in ped.detalles" :key="det.id"
+                            class="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-accented/10 transition-colors">
+                            <div class="flex items-start gap-3">
+                                <span
+                                    class="inline-flex items-center justify-center min-w-8 h-7 px-2 rounded-lg bg-primary/15 text-primary font-extrabold text-xs shrink-0 mt-0.5">
+                                    {{ det.cantidad }}x
                                 </span>
-                                <p v-if="det.personalizacion" class="text-xs text-primary mt-0.5">
-                                    Nota: "{{ det.personalizacion }}"
-                                </p>
+
+                                <div class="space-y-1">
+                                    <p class="font-bold text-highlighted text-sm leading-snug">
+                                        {{ det.producto?.nombre }}
+                                    </p>
+
+                                    <p class="text-xs text-muted">
+                                        Precio unitario: {{ formatPrecio(det.precio_unitario) }}
+                                    </p>
+
+                                    <div v-if="det.personalizacion"
+                                        class="inline-flex items-start gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 border border-primary/25 text-xs text-highlighted mt-1">
+                                        <UIcon name="i-heroicons-pencil-square"
+                                            class="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                                        <span>
+                                            <strong class="text-primary">Personalización:</strong> {{
+                                                det.personalizacion }}
+                                        </span>
+                                    </div>
+                                    <p v-else class="text-[11px] text-muted/80 italic">
+                                        Sin personalización adicional
+                                    </p>
+                                </div>
                             </div>
-                            <span class="font-semibold text-highlighted">
-                                {{ formatPrecio(Number(det.precio_unitario) * det.cantidad) }}
-                            </span>
-                        </li>
-                    </ul>
+
+                            <div class="sm:text-right pl-11 sm:pl-0 shrink-0">
+                                <span class="text-[11px] text-muted block sm:hidden">Subtotal</span>
+                                <span class="font-extrabold text-highlighted text-sm">
+                                    {{ formatPrecio(Number(det.precio_unitario) * det.cantidad) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Sección de Comprobantes de Pago -->
-                <div v-if="ped.pagos && ped.pagos.length > 0" class="space-y-2 pt-2">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-muted">
+                <div v-if="ped.pagos && ped.pagos.length > 0" class="space-y-2 pt-1">
+                    <p class="text-xs font-bold uppercase tracking-wider text-muted">
                         Comprobantes de Transferencia Recibidos:
                     </p>
                     <div v-for="pg in ped.pagos" :key="pg.id"
@@ -261,18 +312,19 @@ async function handleDescargarComprobante(pedidoId: number) {
                     </div>
                 </div>
 
+                <!-- Controles de Fecha y Estado -->
                 <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-3 border-t border-default">
-                    <div class="flex items-center gap-3">
-                        <div>
-                            <label class="text-xs font-semibold text-muted block mb-1">
+                    <div class="flex flex-wrap items-end gap-3">
+                        <div class="w-64">
+                            <label class="text-xs font-semibold text-muted block mb-1.5">
                                 Fecha comprometida de retiro ({{ formatearFechaChile(fechasEditadas[ped.id] ||
                                     ped.fecha_retiro) }})
                             </label>
-                            <UInput v-model="fechasEditadas[ped.id]" type="date" size="sm"
+                            <FechaInputChile v-model="fechasEditadas[ped.id]" :min="fechaHoyISO" size="sm"
                                 :disabled="ped.estado === 'ENT' || ped.estado === 'RCH'" />
                         </div>
                         <UButton v-if="ped.estado !== 'ENT' && ped.estado !== 'RCH'" size="sm" color="neutral"
-                            variant="outline" class="mt-5" :loading="actualizandoId === ped.id"
+                            variant="outline" :loading="actualizandoId === ped.id"
                             @click="cambiarEstado(ped.id, ped.estado)">
                             Guardar Fecha
                         </UButton>

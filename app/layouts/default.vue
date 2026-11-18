@@ -87,7 +87,7 @@ const menuUsuario = computed<DropdownMenuItem[][]>(() => {
                 </div>
 
                 <div class="flex gap-4 md:gap-6 items-center">
-                    <NuxtLink to="/carrito" class="inline-flex items-center gap-1.5" :class="isActive('/carrito')
+                    <NuxtLink v-if="!esAdmin" to="/carrito" class="inline-flex items-center gap-1.5" :class="isActive('/carrito')
                         ? 'text-highlighted font-semibold border-b-2 border-primary pb-1'
                         : 'text-muted hover:text-highlighted transition-colors font-medium'">
                         <span>Carrito</span>
