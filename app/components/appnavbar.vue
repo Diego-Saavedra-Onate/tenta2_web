@@ -13,7 +13,7 @@
                 <NuxtLink to="/modulo1" class="hover:text-primary transition">Módulo 1</NuxtLink>
                 <NuxtLink to="/acerca" class="hover:text-primary transition">Acerca</NuxtLink>
             </nav>
-            <!-- //hguytgoiuti8ti9 -->
+
             <!-- Botón de acción / Login -->
             <div class="flex items-center gap-3">
                 <UButton to="/login" color="primary" variant="solid">
